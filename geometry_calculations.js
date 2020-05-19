@@ -22,6 +22,12 @@ function GeometryASMFunctions(stdlib, foreign, buffer) {
         return abs(x) * sqrt(1.0 + quot * quot)
     }
 
+    function line_segment_intersection() {
+        // returns 1 if intersection found, 0 if no intersection
+
+
+    }
+
     function point_line_segment_distance(px, py, ax, ay, bx, by) {
         // All input values are floats
         px = +px
@@ -72,10 +78,66 @@ function GeometryASMFunctions(stdlib, foreign, buffer) {
         return min_distance
     }
 
-    return {point_line_segment_distance: point_line_segment_distance, point_line_segment_min_distance:point_line_segment_min_distance}
+    function point_line_segment_closest(px, py, ax, ay, bx, by) {
+        // All input values are floats
+        px = +px
+        py = +py
+        ax = +ax
+        ay = +ay
+        bx = +bx
+        by = +by
+
+        var t = 0.0, tx = 0.0, ty = 0.0, d = 0.0, xd = 0.0, yd = 0.0
+
+        xd = bx - ax
+        yd = by - ay
+
+        t = (xd * (px - ax) + yd * (py - ay)) / (xd * xd + yd * yd)
+
+        if (t < 0.0) {
+            t = 0.0
+        } else if (t > 1.0) {
+            t = 1.0
+        }
+
+        tx = ax + t * (bx - ax)
+        ty = ay + t * (by - ay)
+
+        values[0] = tx
+        values[1] = ty
+
+        return +hypot(px - tx, py - ty)
+    }
+
+    function point_line_segment_min_closest(px, py, start, end) {
+        px = +px
+        py = +py
+        start = start|0
+        end = end|0
+
+        var p = 0, q = 0, min_distance = 0.0, distance = 0.0, cx = 0.0, cy = 0.0
+        min_distance = Infinity
+
+        for (p = start << 3, q = ((end - 2) << 3); (p | 0) < (q | 0); p = (p + 16) | 0) {
+            distance = +point_line_segment_closest(px, py, +values[p>>3], +values[(p+8)>>3], +values[(p+16)>>3], +values[(p+24)>>3])
+
+            if (distance < min_distance) {
+                min_distance = distance
+                cx = values[0]
+                cy = values[1]
+            }
+        }
+
+        values[0] = cx
+        values[1] = cy
+
+        return min_distance
+    }
+
+    return {point_line_segment_distance, point_line_segment_min_distance, point_line_segment_closest, point_line_segment_min_closest}
 }
 
-function point_line_segment_min_distance(px, py, polyline_vertices) {
+function _point_line_segment_compute(px, py, polyline_vertices, func) {
     if (polyline_vertices.length < 4)
         return Infinity
 
@@ -98,7 +160,7 @@ function point_line_segment_min_distance(px, py, polyline_vertices) {
                 }
             }
 
-            let distance = ASMFunctions.point_line_segment_min_distance(px, py, 0, elem_c)
+            let distance = func(px, py, 0, elem_c)
 
             if (distance < min_distance) {
                 min_distance = distance
@@ -118,7 +180,20 @@ function point_line_segment_min_distance(px, py, polyline_vertices) {
         }
     }
 
-    return ASMFunctions.point_line_segment_min_distance(px, py, 0, polyline_vertices.length)
+    return func(px, py, 0, polyline_vertices.length)
+}
+
+function point_line_segment_min_distance(px, py, polyline_vertices) {
+    return _point_line_segment_compute(px, py, polyline_vertices, ASMFunctions.point_line_segment_min_distance)
+}
+
+function point_line_segment_min_closest(px, py, polyline_vertices) {
+    let distance = _point_line_segment_compute(px, py, polyline_vertices, ASMFunctions.point_line_segment_min_closest)
+
+    let x = ASMViews.f64[0]
+    let y = ASMViews.f64[1]
+
+    return {x, y, distance}
 }
 
 let heap = new ArrayBuffer(0x10000)
