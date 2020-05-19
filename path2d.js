@@ -126,7 +126,7 @@ class GraphemePath2DSegment {
         return path
     }
 
-    function avgSlope() {
+    avgSlope() {
         return (this._start.y - this._end.y) / (this._start.x - this._end.x)
     }
 
