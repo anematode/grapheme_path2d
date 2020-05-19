@@ -134,7 +134,37 @@ function GeometryASMFunctions(stdlib, foreign, buffer) {
         return min_distance
     }
 
-    return {point_line_segment_distance, point_line_segment_min_distance, point_line_segment_closest, point_line_segment_min_closest}
+    function point_polygon_intersections(px, py, start, end) {
+        px = +px
+        py = +py
+
+        start = start|0
+        end = end|0
+
+        let sx = 0.0, sy = 0.0, ex = 0.0, ey = 0.0
+
+        let intersections = 0
+
+        for (p = start << 3, q = ((end - 2) << 3); (p | 0) < (q | 0); p = (p + 16) | 0) {
+            sy = +values[(p+8)>>3]
+            ey = +values[(p+24)>>3]
+
+            // TODO: add multiple horizontal segment detection
+
+            if (((sy < py) && (py < ey)) || ((sy > py) && (py > ey))) {
+                sx = +values[p>>3]
+                ex = +values[(p+16)>>3]
+
+                if (px < ex || px < sx) {
+                    intersections = (intersections + 1) | 0
+                }
+            }
+        }
+
+        return intersections
+    }
+
+    return {point_line_segment_distance, point_line_segment_min_distance, point_line_segment_closest, point_line_segment_min_closest, point_polygon_intersections}
 }
 
 function _point_line_segment_compute(px, py, polyline_vertices, func) {
@@ -181,6 +211,10 @@ function _point_line_segment_compute(px, py, polyline_vertices, func) {
     }
 
     return func(px, py, 0, polyline_vertices.length)
+}
+
+function point_polygon_intersections(px, py, polygon_vertices) {
+    // TODO
 }
 
 function point_line_segment_min_distance(px, py, polyline_vertices) {

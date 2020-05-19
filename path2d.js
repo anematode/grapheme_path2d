@@ -118,8 +118,6 @@ class GraphemePath2DSegment {
         this.length = this._end.clone().subtract(this._start).length()
     }
 
-    avg
-
     getNativePath() {
         let path = new Path2D()
         path.moveTo(this._start.x, this._start.y)
@@ -128,20 +126,16 @@ class GraphemePath2DSegment {
         return path
     }
 
+    function avgSlope() {
+        return (this._start.y - this._end.y) / (this._start.x - this._end.x)
+    }
+
     getPointAlong(fraction = 0) {
         return this._start.clone().add(this._end.clone().subtract(this._start).scale(fraction / this.length))
     }
 
-    getPointAlongArr(fractions) {
-
-    }
-
-    getPointDistanceAlong(dist) {
-        return this._start.clone().add(this._end.clone().subtract(this._start).scale(fraction / this.length))
-    }
-
-    getPointDistanceAlongArr(dists) {
-
+    getSlopeAt(fraction = 0) {
+        return this.avgSlope()
     }
 }
 
@@ -154,11 +148,11 @@ class CubicBezierPath2DSegment extends GraphemePath2DSegment {
     }
 
     calculateLength() {
-
+        // TODO: basically calc length via numerical integration
     }
 
-    getPointAlong(fraction=0) {
-
+    getPointAlong(t=0) {
+        return this._start.clone().scale((1 - t) ** 3).add(this.cp1.clone().scale(3 * t * (1 - t) ** 2)).add(this.cp2.clone().scale(3 * (1-t) * t**2)).add(this._end.clone().scale(t ** 3))
     }
 }
 
